@@ -8,71 +8,90 @@ import {
   TouchableOpacity,
   FlatList,
   Dimensions,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 
 const { width } = Dimensions.get("screen");
 
+const THEME = {
+  bg: "#021213",
+  textWhite: "#ffffff",
+  textGray: "#d5d5d5",
+  accentMint: "#00FFA3",
+  accentCyan: "#00D1FF",
+};
+
 export default function OnboardingScreen() {
   const flatListRef = useRef<FlatList>(null);
-  const [currentIndex, setCurrentIndex] = useState<number>(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  const handleOnboardingNav = (direction: "prev" | "next") => {
-    if (direction === "prev") {
-      if (currentIndex > 0) {
-        flatListRef.current?.scrollToIndex({
-          index: currentIndex - 1,
-        });
-      }
+  const handleOnboardingNav = () => {
+    if (currentIndex < onboardingScreens.length - 1) {
+      flatListRef.current?.scrollToIndex({
+        index: currentIndex + 1,
+        animated: true,
+      });
     } else {
-      if (currentIndex < onboardingScreens.length - 1) {
-        flatListRef.current?.scrollToIndex({
-          index: currentIndex + 1,
-        });
-      }
-
-      if (currentIndex === onboardingScreens.length - 1) {
-        router.replace("/home");
-      }
+      router.replace("/home");
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Slides */}
       <FlatList
         ref={flatListRef}
         data={onboardingScreens}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        keyExtractor={({ id }) => id}
+        keyExtractor={(item) => item.id}
         onMomentumScrollEnd={(event) => {
           const index = Math.round(event.nativeEvent.contentOffset.x / width);
           setCurrentIndex(index);
         }}
         renderItem={({ item }) => (
           <View style={[styles.slide, { width }]}>
-            <Text style={styles.title}>{item.name}</Text>
+            <Image
+              source={item.image}
+              style={styles.image}
+              resizeMode="contain"
+            />
+
+            <Text style={styles.title}>{item.title}</Text>
+
+            <Text style={styles.description}>{item.description}</Text>
           </View>
         )}
       />
-      <View style={styles.buttons}>
+
+      <View style={styles.bottomContainer}>
         <TouchableOpacity
-          onPress={() => handleOnboardingNav("next")}
-          style={styles.btn}
+          activeOpacity={0.8}
+          onPress={handleOnboardingNav}
+          style={styles.touchableBtnContainer}
         >
-          <Text style={styles.btnText}>
-            {currentIndex === onboardingScreens.length - 1
-              ? "Let's Go"
-              : "Next"}
-          </Text>
+          <LinearGradient
+            colors={[THEME.accentMint, THEME.accentCyan]} // Mint to Cyan gradient
+            start={{ x: 0, y: 0 }} // Diagonal gradient from top-left
+            end={{ x: 1, y: 1 }} // ...to bottom-right
+            style={styles.gradientBtn}
+          >
+            <Text style={styles.btnText}>
+              {onboardingScreens[currentIndex].ctaText}
+            </Text>
+          </LinearGradient>
         </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => handleOnboardingNav("prev")}
-          style={styles.btn}
-        >
-          <Text style={styles.btnText}>Prev</Text>
-        </TouchableOpacity>
+
+        {currentIndex === onboardingScreens.length - 1 && (
+          <TouchableOpacity activeOpacity={0.7}>
+            <Text style={styles.secondaryText}>
+              {onboardingScreens[currentIndex].secondaryText}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -81,48 +100,83 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#252525",
+    backgroundColor: THEME.bg,
   },
-  image: {
-    backgroundColor: "#252525",
-    height: "100%",
-  },
+
   slide: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    paddingHorizontal: 24,
+    paddingBottom: 120,
+  },
+
+  image: {
+    width: width * 0.8, // Reduced width slightly so it doesn't touch edges
+    height: 300, // Fixed height to ensure consistency
+    marginBottom: 40,
   },
 
   title: {
-    fontSize: 28,
-    color: "#fff",
-    fontWeight: "bold",
+    fontSize: 32,
+    color: THEME.textWhite,
+    fontWeight: "800", // Made slightly bolder for a modern look
+    textAlign: "center",
+    marginBottom: 16,
+    letterSpacing: 0.5,
   },
-  buttons: {
+
+  description: {
+    fontSize: 16,
+    color: THEME.textGray,
+    textAlign: "center",
+    lineHeight: 24,
+    paddingHorizontal: 10,
+  },
+
+  bottomContainer: {
     position: "absolute",
-    bottom: 25,
-    left: "50%",
-    transform: [{ translateX: "-50%" }],
-    flexDirection: "row-reverse",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 20,
-    padding: 20,
-    flex: 1,
+    bottom: 50, // Lifted slightly
+    left: 24,
+    right: 24,
+    alignItems: "center", // Ensures secondary text centers properly
   },
-  btn: {
+
+  // 4. New styles for gradient button structure
+  touchableBtnContainer: {
+    width: "100%",
+    borderRadius: 30,
+    // Shadows for depth (optional, looks good on dark bg)
+    shadowColor: THEME.accentMint,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+
+  gradientBtn: {
     paddingVertical: 16,
-    paddingHorizontal: 24,
-    width: "45%",
+    borderRadius: 30,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "#f5f5f5",
-    borderRadius: 15,
+    width: "100%",
   },
+
   btnText: {
-    color: "#f5f5f5",
-    fontWeight: 500,
-    fontSize: 20,
-    textTransform: "uppercase",
+    color: THEME.bg, // Using the dark background color for text contrast against the bright gradient
+    fontSize: 18,
+    fontWeight: "700",
+    letterSpacing: 1,
+  },
+
+  secondaryText: {
+    color: THEME.accentMint, // Changed to the accent color
+    fontSize: 16,
+    fontWeight: "600",
+    textAlign: "center",
+    marginTop: 20, // Changed from absolute positioning to margin for cleaner layout flow
   },
 });
