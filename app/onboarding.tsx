@@ -1,5 +1,6 @@
 import { onboardingScreens } from "@/constants/onboardingContent";
 import { router } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRef, useState } from "react";
 import {
   Text,
@@ -12,34 +13,33 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import { THEME } from "@/constants/theme";
+import { globalStyles } from "@/styles/globalStyles";
+import GradientButton from "@/components/GradientButton";
 
 const { width } = Dimensions.get("screen");
-
-const THEME = {
-  bg: "#021213",
-  textWhite: "#ffffff",
-  textGray: "#d5d5d5",
-  accentMint: "#00FFA3",
-  accentCyan: "#00D1FF",
-};
 
 export default function OnboardingScreen() {
   const flatListRef = useRef<FlatList>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const handleOnboardingNav = () => {
+  const handleOnboardingNav = async () => {
     if (currentIndex < onboardingScreens.length - 1) {
       flatListRef.current?.scrollToIndex({
         index: currentIndex + 1,
         animated: true,
       });
     } else {
-      router.replace("/home");
+      router.replace("/(wallet)/newWallet");
     }
   };
 
+  const handleImportWallet = async () => {
+    router.replace("/(wallet)/existingWallet");
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={globalStyles.container}>
       {/* Slides */}
       <FlatList
         ref={flatListRef}
@@ -68,25 +68,13 @@ export default function OnboardingScreen() {
       />
 
       <View style={styles.bottomContainer}>
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={handleOnboardingNav}
-          style={styles.touchableBtnContainer}
-        >
-          <LinearGradient
-            colors={[THEME.accentMint, THEME.accentCyan]} // Mint to Cyan gradient
-            start={{ x: 0, y: 0 }} // Diagonal gradient from top-left
-            end={{ x: 1, y: 1 }} // ...to bottom-right
-            style={styles.gradientBtn}
-          >
-            <Text style={styles.btnText}>
-              {onboardingScreens[currentIndex].ctaText}
-            </Text>
-          </LinearGradient>
-        </TouchableOpacity>
+        <GradientButton
+          btnText={onboardingScreens[currentIndex].ctaText}
+          OnPress={handleOnboardingNav}
+        />
 
         {currentIndex === onboardingScreens.length - 1 && (
-          <TouchableOpacity activeOpacity={0.7}>
+          <TouchableOpacity onPress={handleImportWallet} activeOpacity={0.7}>
             <Text style={styles.secondaryText}>
               {onboardingScreens[currentIndex].secondaryText}
             </Text>
@@ -98,11 +86,6 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: THEME.bg,
-  },
-
   slide: {
     flex: 1,
     justifyContent: "center",
@@ -140,36 +123,6 @@ const styles = StyleSheet.create({
     left: 24,
     right: 24,
     alignItems: "center", // Ensures secondary text centers properly
-  },
-
-  // 4. New styles for gradient button structure
-  touchableBtnContainer: {
-    width: "100%",
-    borderRadius: 30,
-    // Shadows for depth (optional, looks good on dark bg)
-    shadowColor: THEME.accentMint,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-
-  gradientBtn: {
-    paddingVertical: 16,
-    borderRadius: 30,
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%",
-  },
-
-  btnText: {
-    color: THEME.bg, // Using the dark background color for text contrast against the bright gradient
-    fontSize: 18,
-    fontWeight: "700",
-    letterSpacing: 1,
   },
 
   secondaryText: {

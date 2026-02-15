@@ -1,12 +1,22 @@
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
-import { Text, View, StyleSheet } from "react-native";
+import { StyleSheet } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function Index() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/onboarding");
+    (async () => {
+      const value = await AsyncStorage.getItem("onboarding");
+      const isOnboardingTrue = value ? JSON.parse(value) : false;
+
+      if (isOnboardingTrue) {
+        router.replace("/home");
+      } else {
+        router.replace("/onboarding");
+      }
+    })();
   }, []);
 
   return null;
