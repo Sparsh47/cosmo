@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
   },
 
   blockContainer: {
-    padding: Platform.OS === "ios" ? 14 : 10,
+    padding: 10,
     borderRadius: 8,
     backgroundColor: THEME.bg,
     width: "48%",

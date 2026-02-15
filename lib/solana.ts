@@ -1,11 +1,7 @@
-// IMPORTANT: This polyfill MUST be imported before any crypto-dependent libraries.
-// @noble/hashes captures globalThis.crypto at module evaluation time, so the
-// polyfill must set it up before those modules are evaluated.
 import "../lib/polyfills";
 
 import Toast from "react-native-toast-message";
 import { generateMnemonic, validateMnemonic, mnemonicToSeed } from "bip39";
-import nacl from "tweetnacl";
 import { Keypair } from "@solana/web3.js";
 import bs58 from "bs58";
 import { HDKey } from "micro-ed25519-hdkey";

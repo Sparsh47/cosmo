@@ -10,18 +10,21 @@ import {
   FlatList,
   Dimensions,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
 import { THEME } from "@/constants/theme";
 import { globalStyles } from "@/styles/globalStyles";
 import GradientButton from "@/components/GradientButton";
+import { createWallet } from "@/lib/solana";
+import Toast from "react-native-toast-message";
 
 const { width } = Dimensions.get("screen");
 
 export default function OnboardingScreen() {
   const flatListRef = useRef<FlatList>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [loading, setLoading] = useState<boolean>(false);
 
   const handleOnboardingNav = async () => {
     if (currentIndex < onboardingScreens.length - 1) {
@@ -30,7 +33,27 @@ export default function OnboardingScreen() {
         animated: true,
       });
     } else {
-      router.replace("/(wallet)/newWallet");
+      try {
+        setLoading(true);
+        const wallet = await createWallet();
+        if (!wallet) {
+          Toast.show({
+            type: "error",
+            text1: `Error creating wallet. Try again.`,
+          });
+          return;
+        }
+        await AsyncStorage.setItem("wallet", JSON.stringify(wallet));
+        setTimeout(() => {
+          router.replace("/(wallet)/newWallet");
+        }, 400);
+      } catch (e: any) {
+        Toast.show({
+          type: "error",
+          text1: `Error creating wallet: ${e.message}`,
+        });
+        setLoading(false);
+      }
     }
   };
 
@@ -69,11 +92,13 @@ export default function OnboardingScreen() {
 
       <View style={styles.bottomContainer}>
         <GradientButton
-          btnText={onboardingScreens[currentIndex].ctaText}
+          btnText={
+            loading ? "Creating..." : onboardingScreens[currentIndex].ctaText
+          }
           OnPress={handleOnboardingNav}
         />
 
-        {currentIndex === onboardingScreens.length - 1 && (
+        {!loading && currentIndex === onboardingScreens.length - 1 && (
           <TouchableOpacity onPress={handleImportWallet} activeOpacity={0.7}>
             <Text style={styles.secondaryText}>
               {onboardingScreens[currentIndex].secondaryText}

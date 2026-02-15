@@ -14,21 +14,26 @@ import {
   Text,
   TouchableOpacity,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function NewWalletScreen() {
   const [showPhrase, setShowPhrase] = useState<boolean>(false);
   const [seedPhrase, setSeedPhrase] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     (async () => {
-      const wallet = await createWallet();
+      setLoading(true);
+      const value = await AsyncStorage.getItem("wallet");
+      const wallet = JSON.parse(value!);
       if (!wallet) {
+        setLoading(false);
         return;
       }
       setSeedPhrase(wallet?.mnemonic!);
-      await AsyncStorage.setItem("wallet", JSON.stringify(wallet));
+      setLoading(false);
     })();
   }, []);
 
@@ -41,8 +46,18 @@ export default function NewWalletScreen() {
     setShowPhrase((prev) => !prev);
   };
 
-  // const seedPhrase =
-  //   "apple banana cherry dog eagle fish goat horse ice jacket kangaroo lion";
+  if (loading) {
+    return (
+      <View
+        style={[
+          globalStyles.container,
+          { alignItems: "center", justifyContent: "center" },
+        ]}
+      >
+        <ActivityIndicator color={THEME.accentMint} size="large" />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={globalStyles.container}>
@@ -116,7 +131,7 @@ const styles = StyleSheet.create({
     maxHeight: "95%",
     borderRadius: 15,
     padding: 20,
-    gap: Platform.OS === "ios" ? 20 : 10,
+    gap: 10,
   },
   title: {
     color: "#FFF",
