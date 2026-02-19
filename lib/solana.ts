@@ -2,9 +2,16 @@ import "../lib/polyfills";
 
 import Toast from "react-native-toast-message";
 import { generateMnemonic, validateMnemonic, mnemonicToSeed } from "bip39";
-import { Keypair } from "@solana/web3.js";
+import {
+  Connection,
+  Keypair,
+  LAMPORTS_PER_SOL,
+  PublicKey,
+} from "@solana/web3.js";
 import bs58 from "bs58";
 import { HDKey } from "micro-ed25519-hdkey";
+
+const CONNECTION = new Connection("https://api.devnet.solana.com", "confirmed");
 
 export const createWallet = async () => {
   try {
@@ -41,4 +48,21 @@ export const createWallet = async () => {
     });
     console.error(`Error creating wallet: ${err.message}`);
   }
+};
+
+export const getBalance = async (publicKey: string) => {
+  const key = new PublicKey(publicKey);
+  const balanceInLamports = await CONNECTION.getBalance(key);
+  const balanceInSol = balanceInLamports / LAMPORTS_PER_SOL;
+  return balanceInSol;
+};
+
+export const getTransactions = async (address: string) => {
+  const pubKey = new PublicKey(address);
+
+  const signatures = await CONNECTION.getSignaturesForAddress(pubKey, {
+    limit: 20,
+  });
+
+  return signatures;
 };

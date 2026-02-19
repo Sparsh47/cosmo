@@ -10,4 +10,8 @@ export const THEME = {
     color: "#252525",
     width: 0.5,
   },
+  box: {
+    dimension: 50,
+    radius: 15,
+  },
 };

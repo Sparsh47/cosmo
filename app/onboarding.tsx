@@ -10,7 +10,6 @@ import {
   FlatList,
   Dimensions,
   Image,
-  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { THEME } from "@/constants/theme";

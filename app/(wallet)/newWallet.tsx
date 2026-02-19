@@ -38,7 +38,6 @@ export default function NewWalletScreen() {
   }, []);
 
   const handleNext = async () => {
-    await AsyncStorage.setItem("wallet", JSON.stringify([]));
     router.replace("/home");
   };
 
