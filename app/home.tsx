@@ -22,11 +22,13 @@ export default function Home() {
   const ACTION_BUTTONS = [
     {
       id: "send",
+      title: "Send",
       icon: <Ionicons name="arrow-up-circle-outline" size={32} color="white" />,
       action: () => { },
     },
     {
       id: "receive",
+      title: "Receive",
       icon: (
         <Ionicons name="arrow-down-circle-outline" size={32} color="white" />
       ),
@@ -34,6 +36,7 @@ export default function Home() {
     },
     {
       id: "swap",
+      title: "Swap",
       icon: (
         <MaterialCommunityIcons
           name="swap-horizontal"
@@ -45,6 +48,7 @@ export default function Home() {
     },
     {
       id: "buy",
+      title: "Buy",
       icon: <Ionicons name="card-outline" size={32} color="white" />,
       action: () => { },
     },
@@ -102,7 +106,7 @@ export default function Home() {
                   data={ACTION_BUTTONS}
                   keyExtractor={(item) => item.id}
                   renderItem={({ item }) => (
-                    <ActionButton icon={item.icon} action={item.action} />
+                    <ActionButton icon={item.icon} title={item.title} action={item.action} />
                   )}
                 />
               </View>
@@ -115,11 +119,14 @@ export default function Home() {
   );
 }
 
-function ActionButton({ icon, action }: { icon?: any; action?: () => void }) {
+function ActionButton({ icon, title, action }: { icon?: any; title?: string; action?: () => void }) {
   return (
-    <TouchableOpacity style={styles.actionBtn} onPress={action}>
-      {icon}
-    </TouchableOpacity>
+    <View style={styles.actionBtnWrapper}>
+      <TouchableOpacity style={styles.actionBtn} onPress={action}>
+        {icon}
+      </TouchableOpacity>
+      {title && <Text style={styles.actionBtnTitle}>{title}</Text>}
+    </View>
   );
 }
 
@@ -181,6 +188,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
+  actionBtnWrapper: {
+    alignItems: "center",
+  },
   actionBtn: {
     width: 70,
     height: 70,
@@ -188,5 +198,11 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.bg,
     alignItems: "center",
     justifyContent: "center",
+  },
+  actionBtnTitle: {
+    color: THEME.textWhite,
+    fontSize: 14,
+    fontFamily: "SpaceMono",
+    marginTop: 6,
   },
 });
