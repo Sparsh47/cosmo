@@ -1,15 +1,18 @@
 import "../lib/polyfills";
 
-import Toast from "react-native-toast-message";
-import { generateMnemonic, validateMnemonic, mnemonicToSeed } from "bip39";
 import {
   Connection,
   Keypair,
   LAMPORTS_PER_SOL,
   PublicKey,
+  sendAndConfirmTransaction,
+  SystemProgram,
+  Transaction,
 } from "@solana/web3.js";
+import { generateMnemonic, mnemonicToSeed, validateMnemonic } from "bip39";
 import bs58 from "bs58";
 import { HDKey } from "micro-ed25519-hdkey";
+import Toast from "react-native-toast-message";
 
 const CONNECTION = new Connection("https://api.devnet.solana.com", "confirmed");
 
@@ -66,3 +69,32 @@ export const getTransactions = async (address: string) => {
 
   return signatures;
 };
+
+export const sendSOL = async (senderPvtKey: string, receiverAddress: string, amount: number) => {
+  try {
+    const senderKeyPair = Keypair.fromSecretKey(bs58.decode(senderPvtKey))
+
+    const receiverPubKey = new PublicKey(receiverAddress)
+
+    const transferInstruction = SystemProgram.transfer({
+      fromPubkey: senderKeyPair.publicKey,
+      toPubkey: receiverPubKey,
+      lamports: amount * LAMPORTS_PER_SOL,
+    })
+
+    const transaction = new Transaction().add(transferInstruction)
+
+    const signature = await sendAndConfirmTransaction(CONNECTION, transaction, [
+      senderKeyPair
+    ])
+
+    return signature
+
+  } catch (e) {
+    console.error("Error sending SOL:", e);
+    Toast.show({
+      type: "error",
+      text1: "Error sending SOL",
+    });
+  }
+}

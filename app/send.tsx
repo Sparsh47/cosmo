@@ -1,5 +1,6 @@
 import { THEME } from "@/constants/theme";
-import { getBalance } from "@/lib/solana";
+import { getBalance, sendSOL } from "@/lib/solana";
+import { writeFromClipboard } from "@/lib/utils";
 import { globalStyles } from "@/styles/globalStyles";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -9,13 +10,14 @@ import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
     KeyboardAvoidingView,
+    Modal,
     Platform,
     ScrollView,
     StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
-    View,
+    View
 } from "react-native";
 
 export default function Send() {
@@ -23,12 +25,15 @@ export default function Send() {
     const [amount, setAmount] = useState("");
     const [solBalance, setSolBalance] = useState<number>(0);
     const [sending, setSending] = useState(false);
+    const [wallet, setWallet] = useState<any>(null);
+    const [successSig, setSuccessSig] = useState<string | null>(null);
 
     useEffect(() => {
         (async () => {
             const wallet = await AsyncStorage.getItem("wallet");
             if (JSON.parse(wallet!).length === 0) return;
             const publicKey = JSON.parse(wallet!).publicKey;
+            setWallet(JSON.parse(wallet!))
             const balance = await getBalance(publicKey);
             setSolBalance(balance);
         })();
@@ -38,19 +43,75 @@ export default function Send() {
         setAmount(solBalance.toString());
     };
 
+    const handlePaste = async () => {
+        const clipboardText = await writeFromClipboard();
+        if (!clipboardText) return;
+        setRecipientAddress(clipboardText);
+    }
+
     const handleSend = async () => {
         if (!recipientAddress || !amount) return;
         setSending(true);
-        // TODO: Implement actual send transaction
-        setTimeout(() => {
-            setSending(false);
-        }, 2000);
+        const signature = await sendSOL(wallet.privateKey, recipientAddress, parseFloat(amount));
+        setSending(false);
+        if (signature) {
+            setSuccessSig(signature);
+            setRecipientAddress("");
+            setAmount("");
+            const balance = await getBalance(wallet.publicKey);
+            setSolBalance(balance);
+        }
     };
 
     const isValid = recipientAddress.length > 0 && parseFloat(amount) > 0;
 
     return (
         <View style={globalStyles.container}>
+            {/* Success modal */}
+            <Modal
+                visible={!!successSig}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setSuccessSig(null)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalCard}>
+                        <LinearGradient
+                            colors={["rgba(0,255,163,0.12)", "rgba(0,209,255,0.06)"]}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={styles.modalIconBg}
+                        >
+                            <Ionicons name="checkmark" size={36} color={THEME.accentMint} />
+                        </LinearGradient>
+                        <Text style={styles.modalTitle}>Transaction Sent!</Text>
+                        <Text style={styles.modalSubtitle}>Your SOL has been sent successfully.</Text>
+                        <View style={styles.modalSigBox}>
+                            <Text style={styles.modalSigLabel}>Transaction ID</Text>
+                            <Text style={styles.modalSig} numberOfLines={1}>
+                                {successSig
+                                    ? `${successSig.slice(0, 10)}...${successSig.slice(-8)}`
+                                    : ""}
+                            </Text>
+                        </View>
+                        <TouchableOpacity
+                            activeOpacity={0.85}
+                            onPress={() => setSuccessSig(null)}
+                            style={styles.modalBtnOuter}
+                        >
+                            <LinearGradient
+                                colors={[THEME.accentMint, THEME.accentCyan]}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                style={styles.modalBtn}
+                            >
+                                <Text style={styles.modalBtnText}>Done</Text>
+                            </LinearGradient>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
             <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
                 style={{ flex: 1 }}
@@ -105,7 +166,7 @@ export default function Send() {
                                 <Text style={styles.inputCardLabel}>
                                     Recipient Address
                                 </Text>
-                                <TouchableOpacity style={styles.pasteBtn}>
+                                <TouchableOpacity onPress={handlePaste} style={styles.pasteBtn}>
                                     <Text style={styles.pasteBtnText}>Paste</Text>
                                 </TouchableOpacity>
                             </View>
@@ -439,6 +500,87 @@ const styles = StyleSheet.create({
     sendBtnText: {
         color: THEME.bg,
         fontSize: 18,
+        fontWeight: "700",
+        letterSpacing: 1,
+    },
+
+    // Success modal
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: "rgba(0,0,0,0.7)",
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: 24,
+    },
+    modalCard: {
+        width: "100%",
+        backgroundColor: "#0A1F1D",
+        borderRadius: 28,
+        borderWidth: THEME.border.width,
+        borderColor: THEME.border.color,
+        padding: 28,
+        alignItems: "center",
+        gap: 16,
+    },
+    modalIconBg: {
+        width: 72,
+        height: 72,
+        borderRadius: 24,
+        alignItems: "center",
+        justifyContent: "center",
+        borderWidth: 1,
+        borderColor: "rgba(0,255,163,0.2)",
+    },
+    modalTitle: {
+        color: THEME.textWhite,
+        fontSize: 20,
+        fontWeight: "700",
+        fontFamily: "SpaceMono",
+    },
+    modalSubtitle: {
+        color: THEME.textGray,
+        fontSize: 13,
+        fontFamily: "SpaceMono",
+        textAlign: "center",
+    },
+    modalSigBox: {
+        width: "100%",
+        backgroundColor: "rgba(255,255,255,0.04)",
+        borderRadius: 14,
+        padding: 14,
+        gap: 4,
+        borderWidth: THEME.border.width,
+        borderColor: THEME.border.color,
+    },
+    modalSigLabel: {
+        color: THEME.textGray,
+        fontSize: 11,
+        fontFamily: "SpaceMono",
+    },
+    modalSig: {
+        color: THEME.accentMint,
+        fontSize: 13,
+        fontFamily: "SpaceMono",
+    },
+    modalBtnOuter: {
+        width: "100%",
+        borderRadius: 20,
+        marginTop: 4,
+        shadowColor: THEME.accentMint,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 5,
+    },
+    modalBtn: {
+        paddingVertical: 16,
+        borderRadius: 20,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    modalBtnText: {
+        color: THEME.bg,
+        fontSize: 16,
         fontWeight: "700",
         letterSpacing: 1,
     },

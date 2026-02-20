@@ -5,8 +5,8 @@ import { globalStyles } from "@/styles/globalStyles";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
 import {
   FlatList,
   ScrollView,
@@ -55,16 +55,26 @@ export default function Home() {
     },
   ];
 
-  useEffect(() => {
-    (async () => {
-      const wallet = await AsyncStorage.getItem("wallet");
-      if (JSON.parse(wallet!).length === 0) return;
-      const publicKey = JSON.parse(wallet!).publicKey;
-      setWalletAddress(publicKey);
-      const balance = await getBalance(publicKey);
-      setSolBalance(balance);
-    })();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      const loadWallet = async () => {
+        const wallet = await AsyncStorage.getItem("wallet");
+        if (!wallet) return;
+
+        const parsed = JSON.parse(wallet);
+        if (!parsed || Object.keys(parsed).length === 0) return;
+
+        const publicKey = parsed.publicKey;
+
+        setWalletAddress(publicKey);
+
+        const balance = await getBalance(publicKey);
+        setSolBalance(balance);
+      };
+
+      loadWallet();
+    }, [])
+  );
 
   return (
     <View style={globalStyles.container}>
