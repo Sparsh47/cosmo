@@ -14,7 +14,11 @@ import bs58 from "bs58";
 import { HDKey } from "micro-ed25519-hdkey";
 import Toast from "react-native-toast-message";
 
-export const CONNECTION = new Connection("https://api.devnet.solana.com", "confirmed");
+const rpcUrl = __DEV__
+  ? "https://api.devnet.solana.com"
+  : "https://api.mainnet-beta.solana.com";
+
+export const CONNECTION = new Connection(rpcUrl, "confirmed");
 
 export const createWallet = async () => {
   try {
@@ -54,20 +58,30 @@ export const createWallet = async () => {
 };
 
 export const getBalance = async (publicKey: string) => {
-  const key = new PublicKey(publicKey);
-  const balanceInLamports = await CONNECTION.getBalance(key);
-  const balanceInSol = balanceInLamports / LAMPORTS_PER_SOL;
-  return balanceInSol;
+  try {
+    const key = new PublicKey(publicKey);
+    const balanceInLamports = await CONNECTION.getBalance(key);
+    const balanceInSol = balanceInLamports / LAMPORTS_PER_SOL;
+    return balanceInSol;
+  } catch (err: any) {
+    console.error("Error fetching SOL balance:", err);
+    return 0;
+  }
 };
 
 export const getTransactions = async (address: string) => {
-  const pubKey = new PublicKey(address);
+  try {
+    const pubKey = new PublicKey(address);
 
-  const signatures = await CONNECTION.getSignaturesForAddress(pubKey, {
-    limit: 20,
-  });
+    const signatures = await CONNECTION.getSignaturesForAddress(pubKey, {
+      limit: 20,
+    });
 
-  return signatures;
+    return signatures;
+  } catch (err: any) {
+    console.error("Error fetching transactions:", err);
+    return [];
+  }
 };
 
 export const sendSOL = async (senderPvtKey: string, receiverAddress: string, amount: number) => {
@@ -97,4 +111,40 @@ export const sendSOL = async (senderPvtKey: string, receiverAddress: string, amo
       text1: "Error sending SOL",
     });
   }
-}
+};
+
+export const getUSDCBalance = async (publicKey: string) => {
+  try {
+    const owner = new PublicKey(publicKey);
+
+    // Switch between Devnet Faucet USDC and Mainnet Official USDC
+    const USDC_MINT = __DEV__
+      ? new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU") // Devnet USDC
+      : new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"); // Mainnet USDC
+
+    const response = await CONNECTION.getParsedTokenAccountsByOwner(owner, {
+      mint: USDC_MINT,
+    });
+
+    if (response.value.length === 0) {
+      return 0;
+    }
+
+    const balance = response.value[0].account.data.parsed.info.tokenAmount.uiAmount;
+    return balance;
+  } catch (error: any) {
+    console.error("Error fetching USDC balance:", error);
+    return 0;
+  }
+};
+
+export const getPrices = async () => {
+  try {
+    const response = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=solana,usd-coin&vs_currencies=usd");
+    const data = await response.json();
+    return data;
+  } catch (error: any) {
+    console.error("Error fetching prices:", error);
+    return {};
+  }
+};

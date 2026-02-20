@@ -1,9 +1,11 @@
 import { THEME } from "@/constants/theme";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
+    ActivityIndicator,
     FlatList,
     Platform,
     StatusBar,
@@ -14,14 +16,15 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const ASSETS_DATA = [
+import { getBalance, getPrices, getUSDCBalance } from "@/lib/solana";
+
+const INITIAL_ASSETS_DATA = [
     {
         id: "1",
         name: "Solana",
         symbol: "SOL",
-        balance: "3.20",
-        fiatValue: "$506.94",
-        change: "+5.24%",
+        balance: "0.00",
+        fiatValue: "$0.00",
         isPositive: true,
         icon: "currency-usd",
         iconBg: THEME.accentMint,
@@ -29,35 +32,10 @@ const ASSETS_DATA = [
     },
     {
         id: "2",
-        name: "Ethereum",
-        symbol: "ETH",
-        balance: "2.514",
-        fiatValue: "$6,429.89",
-        change: "-1.12%",
-        isPositive: false,
-        icon: "ethereum",
-        iconBg: "#152422",
-        iconColor: THEME.textWhite,
-    },
-    {
-        id: "3",
-        name: "Toncoin",
-        symbol: "TON",
-        balance: "417.03",
-        fiatValue: "$2,919.21",
-        change: "+2.80%",
-        isPositive: true,
-        icon: "diamond-outline",
-        iconBg: THEME.accentCyan,
-        iconColor: THEME.bg,
-    },
-    {
-        id: "4",
-        name: "Tether",
-        symbol: "USDT",
-        balance: "150.00",
-        fiatValue: "$150.00",
-        change: "+0.01%",
+        name: "USD Coin",
+        symbol: "USDC",
+        balance: "0.00",
+        fiatValue: "$0.00",
         isPositive: true,
         icon: "currency-usd",
         iconBg: "#152422",
@@ -66,7 +44,96 @@ const ASSETS_DATA = [
 ];
 
 export default function AssetsScreen() {
-    const renderAssetItem = ({ item }: { item: typeof ASSETS_DATA[0] }) => (
+    const [wallet, setWallet] = useState<{ publicKey?: string; address?: string;[key: string]: any } | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Balances
+    const [solBalance, setSolBalance] = useState<number>(0);
+    const [usdcBalance, setUsdcBalance] = useState<number>(0);
+
+    // Prices
+    const [solPrice, setSolPrice] = useState<number>(0);
+    const [usdcPrice, setUsdcPrice] = useState<number>(1);
+
+    useEffect(() => {
+        const fetchAllData = async () => {
+            try {
+                // 1. Fetch Wallet
+                const jsonValue = await AsyncStorage.getItem("wallet");
+                let addressToUse = null;
+
+                if (jsonValue !== null) {
+                    const parsedWallet = JSON.parse(jsonValue);
+                    setWallet(parsedWallet);
+                    addressToUse = parsedWallet.publicKey || parsedWallet.address;
+                }
+
+                // 3. If we have a wallet, fetch balances
+                let solBalPromise = Promise.resolve(0);
+                let usdcBalPromise = Promise.resolve(0);
+
+                if (addressToUse) {
+                    solBalPromise = getBalance(addressToUse);
+                    usdcBalPromise = getUSDCBalance(addressToUse);
+                }
+
+                // Wait for all network requests to finish
+                const [priceData, fetchedSolBal, fetchedUsdcBal] = await Promise.all([
+                    getPrices(),
+                    solBalPromise,
+                    usdcBalPromise
+                ]);
+
+                // Update Balances
+                setSolBalance(fetchedSolBal);
+                setUsdcBalance(fetchedUsdcBal);
+
+                // Update Prices if API call was successful
+                if (priceData) {
+                    const solPrice = priceData.solana.usd;
+                    const usdcPrice = priceData["usd-coin"].usd;
+
+                    setSolPrice(solPrice);
+                    setUsdcPrice(usdcPrice);
+                }
+
+            } catch (error) {
+                console.error("Error retrieving data:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchAllData();
+    }, []);
+
+    // 4. Calculate total USD values dynamically based on fetched prices and balances
+    const solFiatValue = solBalance * solPrice;
+    const usdcFiatValue = usdcBalance * usdcPrice;
+    const totalBalanceUSD = solFiatValue + usdcFiatValue;
+
+    // 5. Inject the live balances and calculated fiat values into our data array
+    const dynamicAssetsData = INITIAL_ASSETS_DATA.map(asset => {
+        if (asset.symbol === "SOL") {
+            return {
+                ...asset,
+                balance: solBalance.toFixed(4), // Show up to 4 decimals for SOL
+                fiatValue: `$${solFiatValue.toFixed(2)}`,
+            };
+        }
+        if (asset.symbol === "USDC") {
+            return {
+                ...asset,
+                balance: usdcBalance.toFixed(2),
+                fiatValue: `$${usdcFiatValue.toFixed(2)}`,
+            };
+        }
+        return asset;
+    });
+
+    const displayAddress = wallet?.publicKey || wallet?.address;
+
+    const renderAssetItem = ({ item }: { item: typeof INITIAL_ASSETS_DATA[0] }) => (
         <TouchableOpacity style={styles.assetCard}>
             <View style={styles.assetLeft}>
                 <View style={[styles.iconContainer, { backgroundColor: item.iconBg }]}>
@@ -82,12 +149,6 @@ export default function AssetsScreen() {
                 <Text style={styles.assetFiat}>{item.fiatValue}</Text>
                 <View style={styles.balanceRow}>
                     <Text style={styles.assetBalance}>{item.balance} {item.symbol}</Text>
-                    <Text style={[
-                        styles.assetChange,
-                        { color: item.isPositive ? THEME.accentMint : THEME.dangerRed }
-                    ]}>
-                        {item.change}
-                    </Text>
                 </View>
             </View>
         </TouchableOpacity>
@@ -97,7 +158,6 @@ export default function AssetsScreen() {
         <View style={styles.mainContainer}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-            {/* Full Width Top Gradient */}
             <LinearGradient
                 colors={["#0F3832", "#0A2622", "#061A18"]}
                 start={{ x: 0, y: 0 }}
@@ -106,7 +166,6 @@ export default function AssetsScreen() {
             >
                 <SafeAreaView>
                     <View style={styles.headerInner}>
-                        {/* Top Navigation */}
                         <View style={styles.topNav}>
                             <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
                                 <Ionicons name="arrow-back" size={24} color={THEME.textWhite} />
@@ -117,24 +176,43 @@ export default function AssetsScreen() {
                             </TouchableOpacity>
                         </View>
 
-                        {/* Total Balance Info */}
                         <View style={styles.balanceContainer}>
                             <Text style={styles.totalLabel}>Total Balance</Text>
-                            <Text style={styles.totalAmount}>$10,006.04</Text>
-                            <View style={styles.profitBadge}>
-                                <Ionicons name="trending-up" size={14} color={THEME.bg} />
-                                <Text style={styles.profitText}>+$142.50 (24h)</Text>
-                            </View>
+
+                            {isLoading ? (
+                                <ActivityIndicator size="large" color={THEME.accentMint} style={{ marginVertical: 10 }} />
+                            ) : (
+                                <>
+                                    {/* Dynamically render the calculated total balance */}
+                                    <Text style={styles.totalAmount}>
+                                        ${totalBalanceUSD.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </Text>
+
+                                    {displayAddress && (
+                                        <View style={styles.walletAddressBadge}>
+                                            <Ionicons name="wallet-outline" size={14} color={THEME.textGray} />
+                                            <Text style={styles.walletAddressText}>
+                                                {displayAddress.slice(0, 6)}...{displayAddress.slice(-4)}
+                                            </Text>
+                                        </View>
+                                    )}
+
+                                    {/* Hardcoded 24h profit for now. Need historic data to calculate this dynamically */}
+                                    <View style={styles.profitBadge}>
+                                        <Ionicons name="trending-up" size={14} color={THEME.bg} />
+                                        <Text style={styles.profitText}>+$25.26 (24h)</Text>
+                                    </View>
+                                </>
+                            )}
                         </View>
                     </View>
                 </SafeAreaView>
             </LinearGradient>
 
-            {/* Assets List */}
             <View style={styles.listContainer}>
                 <Text style={styles.sectionTitle}>Your Coins</Text>
                 <FlatList
-                    data={ASSETS_DATA}
+                    data={dynamicAssetsData}
                     keyExtractor={(item) => item.id}
                     renderItem={renderAssetItem}
                     showsVerticalScrollIndicator={false}
@@ -196,7 +274,22 @@ const styles = StyleSheet.create({
         fontSize: 44,
         fontWeight: "700",
         fontFamily: "SpaceMono",
+        marginBottom: 8,
+    },
+    walletAddressBadge: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "rgba(255, 255, 255, 0.05)",
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
         marginBottom: 16,
+        gap: 6,
+    },
+    walletAddressText: {
+        color: THEME.textGray,
+        fontSize: 12,
+        fontFamily: "SpaceMono",
     },
     profitBadge: {
         flexDirection: "row",
