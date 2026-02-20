@@ -5,6 +5,7 @@ import { globalStyles } from "@/styles/globalStyles";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   FlatList,
@@ -24,7 +25,7 @@ export default function Home() {
       id: "send",
       title: "Send",
       icon: <Ionicons name="arrow-up-circle-outline" size={32} color="white" />,
-      action: () => { },
+      action: () => router.push("/send"),
     },
     {
       id: "receive",
@@ -32,7 +33,7 @@ export default function Home() {
       icon: (
         <Ionicons name="arrow-down-circle-outline" size={32} color="white" />
       ),
-      action: () => { },
+      action: () => router.push("/receive"),
     },
     {
       id: "swap",

@@ -1,11 +1,11 @@
-import "../lib/polyfills";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
-import Toast from "react-native-toast-message";
+import { useEffect } from "react";
 import "react-native-reanimated";
+import Toast from "react-native-toast-message";
+import "../lib/polyfills";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -55,6 +55,8 @@ export default function RootLayout() {
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="home" options={{ headerShown: false }} />
+        <Stack.Screen name="send" options={{ headerShown: false }} />
+        <Stack.Screen name="receive" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="(wallet)" options={{ headerShown: false }} />
       </Stack>
