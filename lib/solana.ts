@@ -14,7 +14,7 @@ import bs58 from "bs58";
 import { HDKey } from "micro-ed25519-hdkey";
 import Toast from "react-native-toast-message";
 
-const CONNECTION = new Connection("https://api.devnet.solana.com", "confirmed");
+export const CONNECTION = new Connection("https://api.devnet.solana.com", "confirmed");
 
 export const createWallet = async () => {
   try {

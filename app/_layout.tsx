@@ -58,6 +58,8 @@ export default function RootLayout() {
         <Stack.Screen name="send" options={{ headerShown: false }} />
         <Stack.Screen name="receive" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+        <Stack.Screen name="swap" options={{ headerShown: false }} />
+        <Stack.Screen name="assets" options={{ headerShown: false }} />
         <Stack.Screen name="(wallet)" options={{ headerShown: false }} />
       </Stack>
     </>

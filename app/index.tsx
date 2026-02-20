@@ -1,17 +1,17 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
 import { StyleSheet } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function Index() {
   const router = useRouter();
 
   useEffect(() => {
     (async () => {
-      const value = await AsyncStorage.getItem("onboarding");
-      const isOnboardingTrue = value ? JSON.parse(value) : false;
+      const value = await AsyncStorage.getItem("wallet");
+      const wallet = value ? JSON.parse(value) : null;
 
-      if (isOnboardingTrue) {
+      if (wallet) {
         router.replace("/home");
       } else {
         router.replace("/onboarding");

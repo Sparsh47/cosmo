@@ -83,7 +83,7 @@ export default function Receive() {
                                     <QRCode
                                         value={walletAddress}
                                         size={QR_SIZE}
-                                        color={THEME.bg}
+                                        color={THEME.textWhite}
                                         backgroundColor="transparent"
                                     />
                                 ) : (

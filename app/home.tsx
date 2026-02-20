@@ -2,7 +2,7 @@ import TransactionList from "@/components/TransactionList";
 import { THEME } from "@/constants/theme";
 import { getBalance } from "@/lib/solana";
 import { globalStyles } from "@/styles/globalStyles";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
@@ -45,13 +45,13 @@ export default function Home() {
           color="white"
         />
       ),
-      action: () => { },
+      action: () => { router.push("/swap") },
     },
     {
-      id: "buy",
-      title: "Buy",
-      icon: <Ionicons name="card-outline" size={32} color="white" />,
-      action: () => { },
+      id: "assets",
+      title: "Assets",
+      icon: <MaterialIcons name="account-balance-wallet" size={32} color="white" />,
+      action: () => { router.push("/assets") },
     },
   ];
 
