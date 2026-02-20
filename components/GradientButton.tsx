@@ -1,18 +1,20 @@
 import { THEME } from "@/constants/theme";
-import { LinearGradient } from "expo-linear-gradient";
 import MaskedView from "@react-native-masked-view/masked-view";
-import { Text, TouchableOpacity, StyleSheet, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 type GradientButtonProps = {
   btnText: string;
   OnPress: () => void;
   variant?: "filled" | "outline";
+  disabled?: boolean;
 };
 
 export default function GradientButton({
   btnText,
   OnPress,
   variant = "filled",
+  disabled = false,
 }: GradientButtonProps) {
   const isOutline = variant === "outline";
 
@@ -20,12 +22,13 @@ export default function GradientButton({
     <TouchableOpacity
       activeOpacity={0.8}
       onPress={OnPress}
+      disabled={disabled}
       style={styles.touchableBtnContainer}
     >
       {isOutline ? (
         // 🔥 Outline Variant
         <LinearGradient
-          colors={[THEME.accentMint, THEME.accentCyan]}
+          colors={!disabled ? [THEME.accentMint, THEME.accentCyan] : ["#1a2e2b", "#1a2e2b"]}
           style={styles.gradientBorder}
         >
           <View style={styles.outlineInner}>
